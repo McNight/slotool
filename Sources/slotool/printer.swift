@@ -3,6 +3,7 @@ import Foundation
 struct PrintingOptions: OptionSet {
     static let machHeader   = PrintingOptions(rawValue: 1 << 0)
     static let loadCommands = PrintingOptions(rawValue: 1 << 1)
+    static let sharedLibs   = PrintingOptions(rawValue: 1 << 2)
 
     let rawValue: Int
 }
@@ -55,12 +56,34 @@ enum Printer {
                 printLoadCommands(for: image.archs[0])
             }
         }
+
+        if options.contains(.sharedLibs) {
+            image.archs.forEach { printSharedLibraries(for: $0) }
+        }
     }
 
     private static func printLoadCommands(for arch: Image.Arch) {
         for (index, loadCommand) in arch.loadCommands.enumerated() {
             Swift.print("Load command \(index)")
             Swift.print(loadCommand)
+        }
+    }
+
+    private static func printSharedLibraries(for arch: Image.Arch) {
+        let libs = arch.loadCommands.compactMap { loadCommand in
+            switch loadCommand.cmd {
+            case .LC_LOAD_DYLIB(_, let dylib, _):
+                return dylib
+            case .LC_LOAD_WEAK_DYLIB(_, let dylib, _):
+                return dylib
+            default:
+                return nil
+            }
+        }
+        if libs.isEmpty {
+            Swift.print("No load dylib load command found")
+        } else {
+            libs.forEach { Swift.print($0) }
         }
     }
 

@@ -11,6 +11,9 @@ struct slotool: ParsableCommand {
     @Flag(name: [.customShort("l")], help: "print the load commands")
     var loadCommands: Bool = false
 
+    @Flag(name: [.customShort("L")], help: "print shared libraries used")
+    var printSharedLibs: Bool = false
+
     @Argument
     var inputFile: String
 
@@ -24,6 +27,9 @@ struct slotool: ParsableCommand {
         }
         if loadCommands {
             options.insert(.loadCommands)
+        }
+        if printSharedLibs {
+            options.insert(.sharedLibs)
         }
 
         guard !options.isEmpty else {

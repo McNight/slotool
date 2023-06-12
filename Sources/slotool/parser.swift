@@ -143,7 +143,9 @@ struct Parser {
         case MachO.LC_MAIN:
             return .LC_MAIN(cmdData.withUnsafeBytes { $0.load(as: entry_point_command.self) })
         case UInt32(MachO.LC_LOAD_DYLIB):
-            return parseLoadDylibCommand(data: data, offset: offset, cmdData: cmdData, swap: swap)
+            return parseLoadDylibCommand(data: data, offset: offset, cmdData: cmdData, weak: false, swap: swap)
+        case UInt32(MachO.LC_LOAD_WEAK_DYLIB):
+            return parseLoadDylibCommand(data: data, offset: offset, cmdData: cmdData, weak: true, swap: swap)
         case UInt32(MachO.LC_FUNCTION_STARTS):
             return .LC_FUNCTION_STARTS(cmdData.withUnsafeBytes { $0.load(as: linkedit_data_command.self) })
         case UInt32(MachO.LC_DATA_IN_CODE):
@@ -195,10 +197,14 @@ struct Parser {
         return .LC_SEGMENT_64(segment: segment, sections: sections)
     }
 
-    private func parseLoadDylibCommand(data: Data, offset: Int, cmdData: Data, swap: Bool) -> LoadCommand.Cmd {
+    private func parseLoadDylibCommand(data: Data, offset: Int, cmdData: Data, weak: Bool, swap: Bool) -> LoadCommand.Cmd {
         let command = cmdData.withUnsafeBytes { $0.load(as: dylib_command.self) }
         let dylibName = retrieve(loadCommandString: command.dylib.name, from: data, offset: offset, size: Int(command.cmdsize), swap: swap)
-        return .LC_LOAD_DYLIB(cmd: command, dylibName: dylibName, offset: command.dylib.name.offset)
+        if weak {
+            return .LC_LOAD_WEAK_DYLIB(cmd: command, dylibName: dylibName, offset: command.dylib.name.offset)
+        } else {
+            return .LC_LOAD_DYLIB(cmd: command, dylibName: dylibName, offset: command.dylib.name.offset)
+        }
     }
 
     private func parseLoadDylinkerCommand(data: Data, offset: Int, cmdData: Data, swap: Bool) -> LoadCommand.Cmd {

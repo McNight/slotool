@@ -13,6 +13,7 @@ struct LoadCommand {
         case LC_SOURCE_VERSION(source_version_command)
         case LC_MAIN(entry_point_command)
         case LC_LOAD_DYLIB(cmd: dylib_command, dylibName: String, offset: UInt32)
+        case LC_LOAD_WEAK_DYLIB(cmd: dylib_command, dylibName: String, offset: UInt32)
         case LC_FUNCTION_STARTS(linkedit_data_command)
         case LC_DATA_IN_CODE(linkedit_data_command)
         case LC_UNIXTHREAD(thread_command)
@@ -158,9 +159,16 @@ extension LoadCommand: CustomStringConvertible {
             cmdsize \(command.cmdsize)
                uuid \(command.uuidString(swap: context.shouldSwap))
             """
-        case let .LC_LOAD_DYLIB(command, dylibName, offset):
+        case let .LC_LOAD_DYLIB(command, dylibName, offset), let .LC_LOAD_WEAK_DYLIB(command, dylibName, offset):
+            let cmdString: String
+            // meh
+            if case .LC_LOAD_DYLIB = cmd {
+                cmdString = "LC_LOAD_DYLIB"
+            } else {
+                cmdString = "LC_LOAD_WEAK_DYLIB"
+            }
             return """
-                cmd LC_LOAD_DYLIB
+                cmd \(cmdString)
             cmdsize \(command.cmdsize)
                name \(dylibName) (offset \(offset))
             """
